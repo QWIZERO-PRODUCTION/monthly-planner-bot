@@ -26,17 +26,30 @@ class Database:
             print(f"❌ Ошибка создания пользователя: {e}")
             return None
     
-    def create_monthly_plan(self, user_id, year, month):
-        try:
-            existing = self.client.table('monthly_plans').select('*').eq('user_id', user_id).eq('year', year).eq('month', month).execute()
-            if existing.data:
-                return None
-            
-            response = self.client.table('monthly_plans').insert({
-                'user_id': user_id,
-                'year': year,
-                'month': month
-            }).execute()
+    def create_monthly_plan(self, user_id: int, year: int, month: int):
+    try:
+        # Сначала убедись что пользователь существует
+        self.create_user(user_id, "user")
+        
+        # Проверь есть ли уже план
+        response = self.client.table('monthly_plans').select('*').eq('user_id', user_id).eq('year', year).eq('month', month).execute()
+        
+        if response.data and len(response.data) > 0:
+            return None  # План уже существует
+        
+        # Создать новый план
+        new_plan = self.client.table('monthly_plans').insert({
+            'user_id': user_id,
+            'year': year,
+            'month': month
+        }).execute()
+        
+        if new_plan.data and len(new_plan.data) > 0:
+            return new_plan.data[0]['plan_id']
+        return None
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return None
             
             return response.data[0]['plan_id'] if response.data else None
         except Exception as e:
